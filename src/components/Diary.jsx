@@ -23,10 +23,7 @@ export default function Diary({ diary, setDiary, CAT_COLORS, CAT_LABELS, today, 
   const day = diary[selDate] || { mood:"", energy:"", sleep:"", note:"", entries:[] };
   const dates = Object.keys(diary).sort().reverse();
 
-  const updateDay = (patch) => setDiary(d => ({
-    ...d,
-    [selDate]: { ...day, ...patch },
-  }));
+  const updateDay = (patch) => setDiary(selDate, patch);
 
   const addEntryFn = () => {
     if (!entryText.trim()) return;

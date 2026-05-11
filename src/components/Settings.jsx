@@ -1,49 +1,172 @@
 import { useState } from "react";
 
-export default function Settings({ apiKey, setApiKey, notify, AREAS }) {
-  const [draft,  setDraft]  = useState(apiKey);
-  const [show,   setShow]   = useState(false);
+const SQL = `-- Run this once in Supabase → SQL Editor
 
-  const save = () => {
-    setApiKey(draft.trim());
-    notify("API key saved");
+create table if not exists tasks (
+  id     text primary key,
+  area   text,
+  prio   text,
+  done   boolean default false,
+  title  text,
+  detail text default '',
+  obj    text default '',
+  steps  jsonb default '[]',
+  notes  text default ''
+);
+
+create table if not exists diary (
+  date    text primary key,
+  mood    text default '',
+  energy  text default '',
+  sleep   text default '',
+  note    text default '',
+  entries jsonb default '[]'
+);
+
+-- Row Level Security (allow all — personal app)
+alter table tasks enable row level security;
+alter table diary enable row level security;
+
+create policy "allow all" on tasks for all using (true) with check (true);
+create policy "allow all" on diary for all using (true) with check (true);`;
+
+export default function Settings({ apiKey, setApiKey, notify, AREAS, sbReady, syncing, onSupabaseSaved }) {
+  const [apiDraft, setApiDraft] = useState(apiKey);
+  const [showApi,  setShowApi]  = useState(false);
+
+  const [sbUrl,    setSbUrl]    = useState(() => localStorage.getItem("sb-url") || "");
+  const [sbKey,    setSbKey]    = useState(() => localStorage.getItem("sb-key") || "");
+  const [showSb,   setShowSb]   = useState(false);
+  const [showSql,  setShowSql]  = useState(false);
+  const [copied,   setCopied]   = useState(false);
+
+  const saveApi = () => { setApiKey(apiDraft.trim()); notify("Anthropic key saved"); };
+
+  const saveSupabase = async () => {
+    const url = sbUrl.trim();
+    const key = sbKey.trim();
+    if (!url || !key) { notify("Both URL and key are required"); return; }
+    localStorage.setItem("sb-url", url);
+    localStorage.setItem("sb-key", key);
+    await onSupabaseSaved();
+  };
+
+  const copySql = () => {
+    navigator.clipboard.writeText(SQL).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
 
-      {/* API Key */}
+      {/* Supabase */}
+      <section className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-stone-800">🗄️ Supabase Database</h2>
+            <p className="text-xs text-stone-400 mt-0.5">Get URL + Anon Key from your Supabase project → Settings → API.</p>
+          </div>
+          {sbReady  && <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">● Connected</span>}
+          {syncing  && <span className="text-xs text-amber-500 font-medium bg-amber-50 px-2 py-1 rounded-full">⟳ Syncing</span>}
+          {!sbReady && !syncing && <span className="text-xs text-stone-400 bg-stone-50 px-2 py-1 rounded-full">Not set</span>}
+        </div>
+
+        {/* Step 1: SQL */}
+        <div className="bg-stone-50 rounded-xl p-3 space-y-2">
+          <p className="text-xs font-semibold text-stone-600">Step 1 — Create tables in Supabase</p>
+          <p className="text-xs text-stone-400">Go to your Supabase project → SQL Editor → paste and run this:</p>
+          <button
+            onClick={() => setShowSql(v => !v)}
+            className="text-xs text-stone-500 underline"
+          >
+            {showSql ? "Hide SQL" : "Show SQL"}
+          </button>
+          {showSql && (
+            <div className="relative">
+              <pre className="text-[9px] bg-stone-900 text-green-300 rounded-xl p-3 overflow-x-auto leading-relaxed whitespace-pre-wrap">
+                {SQL}
+              </pre>
+              <button
+                onClick={copySql}
+                className="absolute top-2 right-2 text-[10px] bg-stone-700 hover:bg-stone-600 text-white px-2 py-1 rounded-lg transition-colors"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Step 2: credentials */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-stone-600">Step 2 — Enter your credentials</p>
+          <input
+            type="url"
+            value={sbUrl}
+            onChange={e => setSbUrl(e.target.value)}
+            placeholder="https://xxxxxxxxxxxx.supabase.co"
+            className="w-full text-sm border border-stone-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-stone-400"
+          />
+          <div className="flex gap-2">
+            <input
+              type={showSb ? "text" : "password"}
+              value={sbKey}
+              onChange={e => setSbKey(e.target.value)}
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"
+              className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-stone-400 font-mono text-xs"
+            />
+            <button onClick={() => setShowSb(v => !v)} className="text-xs text-stone-400 border border-stone-200 rounded-xl px-3 shrink-0">
+              {showSb ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
+
+        <button
+          onClick={saveSupabase}
+          disabled={!sbUrl.trim() || !sbKey.trim() || syncing}
+          className="w-full bg-stone-800 text-white text-sm py-2.5 rounded-xl font-medium disabled:opacity-40"
+        >
+          {syncing ? "Syncing…" : "Save & sync to Supabase"}
+        </button>
+        <p className="text-[10px] text-stone-400 text-center">Saves credentials in your browser, then uploads all data to Supabase.</p>
+      </section>
+
+      {/* Anthropic API Key */}
       <section className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 space-y-3">
         <div>
           <h2 className="text-sm font-semibold text-stone-800">🔑 Anthropic API Key</h2>
           <p className="text-xs text-stone-400 mt-0.5">
-            Required for Brain Dump and grounding features. Stored only in your browser.
+            Required for Brain Dump and Grounding features. Get it at console.anthropic.com → API Keys.
           </p>
         </div>
         <div className="flex gap-2">
           <input
-            type={show ? "text" : "password"}
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            placeholder="sk-ant-…"
-            className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-stone-400 font-mono"
+            type={showApi ? "text" : "password"}
+            value={apiDraft}
+            onChange={e => setApiDraft(e.target.value)}
+            placeholder="sk-ant-api03-…"
+            className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-stone-400 font-mono text-xs"
           />
-          <button onClick={() => setShow(v => !v)} className="text-xs text-stone-400 border border-stone-200 rounded-xl px-3">
-            {show ? "Hide" : "Show"}
+          <button onClick={() => setShowApi(v => !v)} className="text-xs text-stone-400 border border-stone-200 rounded-xl px-3 shrink-0">
+            {showApi ? "Hide" : "Show"}
           </button>
         </div>
-        <button
-          onClick={save}
-          className="w-full bg-stone-800 text-white text-sm py-2.5 rounded-xl font-medium"
-        >
+        <button onClick={saveApi} className="w-full bg-stone-800 text-white text-sm py-2.5 rounded-xl font-medium">
           Save key
         </button>
-        {apiKey && (
-          <p className="text-[10px] text-green-600 text-center">✓ Key is set</p>
-        )}
+        {apiKey && <p className="text-[10px] text-green-600 text-center">✓ Key is set</p>}
       </section>
 
-      {/* Area reference */}
+      {/* Keys reference */}
+      <section className="bg-amber-50 rounded-2xl p-4 border border-amber-100 space-y-2">
+        <h2 className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Keys you need</h2>
+        <KeyRow emoji="🔑" label="Anthropic API Key" where="console.anthropic.com → API Keys" usedFor="Brain Dump, Panic/Grounding" />
+        <KeyRow emoji="🗄️" label="Supabase URL"      where="Supabase project → Settings → API" usedFor="Database (all data)" />
+        <KeyRow emoji="🗄️" label="Supabase Anon Key" where="Supabase project → Settings → API" usedFor="Database (all data)" />
+      </section>
+
+      {/* Area guide */}
       <section className="space-y-2">
         <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Area Guide</h2>
         {AREAS.map(a => (
@@ -57,12 +180,23 @@ export default function Settings({ apiKey, setApiKey, notify, AREAS }) {
         ))}
       </section>
 
-      {/* About */}
       <section className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 text-center space-y-1">
         <p className="text-sm font-semibold text-stone-700">🌳 Árvore da Vida</p>
         <p className="text-xs text-stone-400">A living personal organiser — roots, trunk, sap, flowers, fruits.</p>
-        <p className="text-[10px] text-stone-300 mt-2">All data stays in your browser.</p>
       </section>
+    </div>
+  );
+}
+
+function KeyRow({ emoji, label, where, usedFor }) {
+  return (
+    <div className="flex items-start gap-2 py-1.5 border-b border-amber-100 last:border-0">
+      <span className="shrink-0">{emoji}</span>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-amber-900">{label}</p>
+        <p className="text-[10px] text-amber-700">From: {where}</p>
+        <p className="text-[10px] text-amber-600">Used for: {usedFor}</p>
+      </div>
     </div>
   );
 }
