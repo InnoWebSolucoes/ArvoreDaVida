@@ -1,4 +1,5 @@
-export const MODEL = "claude-sonnet-4-20250514";
+export const AI_MODEL = "gpt-4o";
+export const AI_URL   = import.meta.env.VITE_AI_URL || "https://api.openai.com/v1/responses";
 
 export const AREAS = [
   { key:"raizes",     label:"🌱 Roots",    color:"#8B5E3C", desc:"Who I truly am, even when no one is watching. Values, character, shadows. Past in the present. Resolving what is unfinished." },

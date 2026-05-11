@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { AREAS, PRIO, CAT_COLORS, CAT_LABELS, INIT_TASKS, INIT_DIARY, MODEL } from "./data";
+import { AREAS, PRIO, CAT_COLORS, CAT_LABELS, INIT_TASKS, INIT_DIARY, AI_MODEL, AI_URL } from "./data";
 import { isConfigured, resetClient } from "./supabase";
 import {
   dbLoadTasks, dbUpsertTask, dbDeleteTask, dbUpsertAllTasks,
@@ -112,29 +112,39 @@ export default function App() {
     }
   };
 
-  // ── Claude API helper ───────────────────────────────────────────────────
-  const callClaude = async (messages, system, maxTokens = 1000) => {
-    if (!apiKey) throw new Error("No API key. Add it in Settings.");
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
+  // ── OpenAI Responses API helper ─────────────────────────────────────────
+  const resolvedAiKey = apiKey || import.meta.env.VITE_AI_KEY || "";
+
+  const callAI = async (userContent, system, _maxTokens = 1000) => {
+    if (!resolvedAiKey) throw new Error("No AI key. Add it in Settings.");
+    const body = {
+      model:        AI_MODEL,
+      instructions: system,
+      input:        userContent,
+    };
+    const r = await fetch(AI_URL, {
+      method:  "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true",
+        "Content-Type":  "application/json",
+        "Authorization": `Bearer ${resolvedAiKey}`,
       },
-      body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, system, messages }),
+      body: JSON.stringify(body),
     });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.error?.message || "API error"); }
-    const d = await r.json();
-    return d.content[0].text;
+    if (!r.ok) {
+      const e = await r.json();
+      throw new Error(e.error?.message || `API error ${r.status}`);
+    }
+    const data = await r.json();
+    // OpenAI Responses API: data.output[0].content[0].text
+    return data.output?.[0]?.content?.[0]?.text ?? data.output?.[0]?.content ?? "";
   };
 
   const shared = {
     tasks, diary,
     setDiary: updateDiaryDay,
-    apiKey, toggleDone, delTask, saveNote, addTasks,
-    callClaude, notify,
+    apiKey: resolvedAiKey,
+    toggleDone, delTask, saveNote, addTasks,
+    callAI, notify,
     AREAS, PRIO, CAT_COLORS, CAT_LABELS, today,
   };
 

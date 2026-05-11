@@ -34,13 +34,14 @@ export default function Settings({ apiKey, setApiKey, notify, AREAS, sbReady, sy
   const [apiDraft, setApiDraft] = useState(apiKey);
   const [showApi,  setShowApi]  = useState(false);
 
-  const [sbUrl,    setSbUrl]    = useState(() => localStorage.getItem("sb-url") || "");
-  const [sbKey,    setSbKey]    = useState(() => localStorage.getItem("sb-key") || "");
+  const [sbUrl,    setSbUrl]    = useState(() => import.meta.env.VITE_SUPABASE_URL || localStorage.getItem("sb-url") || "");
+  const [sbKey,    setSbKey]    = useState(() => import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem("sb-key") || "");
   const [showSb,   setShowSb]   = useState(false);
   const [showSql,  setShowSql]  = useState(false);
   const [copied,   setCopied]   = useState(false);
 
-  const saveApi = () => { setApiKey(apiDraft.trim()); notify("Anthropic key saved"); };
+  const envAiKey = import.meta.env.VITE_AI_KEY || "";
+  const saveApi = () => { setApiKey(apiDraft.trim()); notify("OpenAI key saved"); };
 
   const saveSupabase = async () => {
     const url = sbUrl.trim();
@@ -132,38 +133,49 @@ export default function Settings({ apiKey, setApiKey, notify, AREAS, sbReady, sy
         <p className="text-[10px] text-stone-400 text-center">Saves credentials in your browser, then uploads all data to Supabase.</p>
       </section>
 
-      {/* Anthropic API Key */}
+      {/* OpenAI API Key */}
       <section className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 space-y-3">
-        <div>
-          <h2 className="text-sm font-semibold text-stone-800">🔑 Anthropic API Key</h2>
-          <p className="text-xs text-stone-400 mt-0.5">
-            Required for Brain Dump and Grounding features. Get it at console.anthropic.com → API Keys.
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-stone-800">🔑 OpenAI API Key</h2>
+            <p className="text-xs text-stone-400 mt-0.5">
+              Required for Brain Dump and Grounding. Get it at platform.openai.com → API Keys.
+            </p>
+          </div>
+          {(apiKey || envAiKey) && <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">● Set</span>}
+        </div>
+        {envAiKey && (
+          <p className="text-[10px] text-green-700 bg-green-50 rounded-lg px-3 py-2">
+            ✓ Key loaded from environment — no need to enter manually.
           </p>
-        </div>
-        <div className="flex gap-2">
-          <input
-            type={showApi ? "text" : "password"}
-            value={apiDraft}
-            onChange={e => setApiDraft(e.target.value)}
-            placeholder="sk-ant-api03-…"
-            className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-stone-400 font-mono text-xs"
-          />
-          <button onClick={() => setShowApi(v => !v)} className="text-xs text-stone-400 border border-stone-200 rounded-xl px-3 shrink-0">
-            {showApi ? "Hide" : "Show"}
-          </button>
-        </div>
-        <button onClick={saveApi} className="w-full bg-stone-800 text-white text-sm py-2.5 rounded-xl font-medium">
-          Save key
-        </button>
-        {apiKey && <p className="text-[10px] text-green-600 text-center">✓ Key is set</p>}
+        )}
+        {!envAiKey && (
+          <>
+            <div className="flex gap-2">
+              <input
+                type={showApi ? "text" : "password"}
+                value={apiDraft}
+                onChange={e => setApiDraft(e.target.value)}
+                placeholder="sk-proj-…"
+                className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-stone-400 font-mono text-xs"
+              />
+              <button onClick={() => setShowApi(v => !v)} className="text-xs text-stone-400 border border-stone-200 rounded-xl px-3 shrink-0">
+                {showApi ? "Hide" : "Show"}
+              </button>
+            </div>
+            <button onClick={saveApi} className="w-full bg-stone-800 text-white text-sm py-2.5 rounded-xl font-medium">
+              Save key
+            </button>
+          </>
+        )}
       </section>
 
       {/* Keys reference */}
       <section className="bg-amber-50 rounded-2xl p-4 border border-amber-100 space-y-2">
         <h2 className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Keys you need</h2>
-        <KeyRow emoji="🔑" label="Anthropic API Key" where="console.anthropic.com → API Keys" usedFor="Brain Dump, Panic/Grounding" />
-        <KeyRow emoji="🗄️" label="Supabase URL"      where="Supabase project → Settings → API" usedFor="Database (all data)" />
-        <KeyRow emoji="🗄️" label="Supabase Anon Key" where="Supabase project → Settings → API" usedFor="Database (all data)" />
+        <KeyRow emoji="🔑" label="OpenAI API Key"     where="platform.openai.com → API Keys" usedFor="Brain Dump, Panic/Grounding" />
+        <KeyRow emoji="🗄️" label="Supabase URL"       where="Supabase project → Settings → API" usedFor="Database (all data)" />
+        <KeyRow emoji="🗄️" label="Supabase Anon Key"  where="Supabase project → Settings → API" usedFor="Database (all data)" />
       </section>
 
       {/* Area guide */}

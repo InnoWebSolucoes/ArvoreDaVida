@@ -12,7 +12,7 @@ Be warm but concise. First: acknowledge the feeling in one sentence.
 Then provide 3-5 immediate, simple, physical or grounding steps they can take RIGHT NOW.
 Then one gentle reframe. Keep your entire response under 200 words. Use plain text, minimal formatting.`;
 
-export default function AIPanel({ callClaude, addTasks, notify, AREAS }) {
+export default function AIPanel({ callAI, addTasks, notify, AREAS }) {
   const [dump,   setDump]   = useState("");
   const [dLoad,  setDLoad]  = useState(false);
   const [dResult,setDResult]= useState(null);
@@ -29,7 +29,7 @@ export default function AIPanel({ callClaude, addTasks, notify, AREAS }) {
     setDLoad(true); setDResult(null); setDError("");
     const txt = dump.trim();
     try {
-      const raw = await callClaude([{ role:"user", content: txt }], DUMP_SYSTEM, 1200);
+      const raw = await callAI(txt, DUMP_SYSTEM, 1200);
       const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || raw);
       setDResult(json.tasks || []);
     } catch (e) {
@@ -50,7 +50,7 @@ export default function AIPanel({ callClaude, addTasks, notify, AREAS }) {
     if (!pWhy.trim() || pLoad) return;
     setPLoad(true); setPSteps([]); setPError("");
     try {
-      const raw = await callClaude([{ role:"user", content: pWhy }], PANIC_SYSTEM, 400);
+      const raw = await callAI(pWhy, PANIC_SYSTEM, 400);
       const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
       setPSteps(lines);
     } catch (e) {
