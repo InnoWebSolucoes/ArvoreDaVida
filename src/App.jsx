@@ -17,11 +17,11 @@ const lsGet = (k, fb) => { try { const v = localStorage.getItem(k); return v ? J
 const lsSet = (k, v)  => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 const NAV = [
-  { key:"dashboard", label:"Tree",     icon:"🌳" },
-  { key:"tasks",     label:"Tasks",    icon:"✅" },
-  { key:"diary",     label:"Diary",    icon:"📖" },
-  { key:"ai",        label:"AI",       icon:"🤖" },
-  { key:"settings",  label:"Settings", icon:"⚙️" },
+  { key:"dashboard", label:"Árvore",  icon:"🌳" },
+  { key:"tasks",     label:"Tarefas", icon:"✅" },
+  { key:"diary",     label:"Diário",  icon:"📖" },
+  { key:"ai",        label:"IA",      icon:"🤖" },
+  { key:"settings",  label:"Config",  icon:"⚙️" },
 ];
 
 export default function App() {
@@ -48,7 +48,7 @@ export default function App() {
         if (d && Object.keys(d).length > 0) setDiary(d);
         setSbReady(true);
       })
-      .catch(e => notify("Supabase load error: " + e.message))
+      .catch(e => notify("Erro ao carregar Supabase: " + e.message))
       .finally(() => setSyncing(false));
   }, []);
 
@@ -67,7 +67,7 @@ export default function App() {
   const delTask = (id) => {
     setTasks(ts => ts.filter(t => t.id !== id));
     dbDeleteTask(id);
-    notify("Removed");
+    notify("Removido");
   };
 
   const saveNote = (id, note) => {
@@ -104,9 +104,9 @@ export default function App() {
       await dbUpsertAllTasks(tasks);
       await dbUpsertAllDiary(diary);
       setSbReady(true);
-      notify("Synced to Supabase ✓");
+      notify("Sincronizado com Supabase ✓");
     } catch (e) {
-      notify("Sync error: " + e.message);
+      notify("Erro de sincronização: " + e.message);
     } finally {
       setSyncing(false);
     }
@@ -116,7 +116,7 @@ export default function App() {
   const resolvedAiKey = apiKey || import.meta.env.VITE_AI_KEY || "";
 
   const callAI = async (userContent, system, _maxTokens = 1000) => {
-    if (!resolvedAiKey) throw new Error("No AI key. Add it in Settings.");
+    if (!resolvedAiKey) throw new Error("Sem chave de IA. Adicione nas Configurações.");
     const body = {
       model:        AI_MODEL,
       instructions: system,
@@ -132,7 +132,7 @@ export default function App() {
     });
     if (!r.ok) {
       const e = await r.json();
-      throw new Error(e.error?.message || `API error ${r.status}`);
+      throw new Error(e.error?.message || `Erro de API ${r.status}`);
     }
     const data = await r.json();
     // OpenAI Responses API: data.output[0].content[0].text
@@ -156,7 +156,7 @@ export default function App() {
         <div className="px-5 mb-4">
           <h1 className="text-lg font-semibold text-stone-800">🌳 Árvore da Vida</h1>
           {sbReady && <p className="text-[10px] text-green-500 mt-0.5">● Supabase</p>}
-          {syncing  && <p className="text-[10px] text-amber-500 mt-0.5">⟳ Syncing…</p>}
+          {syncing  && <p className="text-[10px] text-amber-500 mt-0.5">⟳ Sincronizando…</p>}
         </div>
         {NAV.map(n => (
           <button
@@ -180,7 +180,7 @@ export default function App() {
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-stone-200 shrink-0">
           <div className="flex items-center gap-2">
             <h1 className="text-base font-semibold text-stone-800">🌳 Árvore da Vida</h1>
-            {sbReady  && <span className="text-[9px] text-green-500 font-medium">● DB</span>}
+            {sbReady  && <span className="text-[9px] text-green-500 font-medium">● BD</span>}
             {syncing  && <span className="text-[9px] text-amber-500 font-medium">⟳</span>}
           </div>
           <span className="text-xs text-stone-400 font-medium">{NAV.find(n => n.key === tab)?.label}</span>

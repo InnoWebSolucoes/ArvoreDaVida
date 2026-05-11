@@ -19,21 +19,21 @@ export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRI
 
   return (
     <div className="flex flex-col h-full">
-      {/* Filters */}
+      {/* Filtros */}
       <div className="sticky top-0 bg-[#faf8f5] z-10 px-4 pt-4 pb-2 space-y-2 border-b border-stone-200">
-        {/* Area filter */}
+        {/* Filtro por área */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-          <FilterChip active={areaFilter === "all"} onClick={() => setAreaFilter("all")} color="#6b7280">All</FilterChip>
+          <FilterChip active={areaFilter === "all"} onClick={() => setAreaFilter("all")} color="#6b7280">Todas</FilterChip>
           {AREAS.map(a => (
             <FilterChip key={a.key} active={areaFilter === a.key} onClick={() => setAreaFilter(a.key)} color={a.color}>
               {a.label}
             </FilterChip>
           ))}
         </div>
-        {/* Priority + done toggle row */}
+        {/* Filtro por prioridade + mostrar feitas */}
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5 flex-1">
-            <FilterChip active={prioFilter === "all"} onClick={() => setPrioFilter("all")} color="#6b7280" sm>All</FilterChip>
+            <FilterChip active={prioFilter === "all"} onClick={() => setPrioFilter("all")} color="#6b7280" sm>Todas</FilterChip>
             {PRIO.map(p => (
               <FilterChip key={p.key} active={prioFilter === p.key} onClick={() => setPrioFilter(p.key)} color={p.color} sm>
                 {p.emoji} {p.label}
@@ -46,15 +46,15 @@ export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRI
               showDone ? "bg-stone-200 border-stone-300 text-stone-700" : "border-stone-200 text-stone-400"
             }`}
           >
-            {showDone ? "Hide done" : "Show done"}
+            {showDone ? "Ocultar feitas" : "Mostrar feitas"}
           </button>
         </div>
       </div>
 
-      {/* Task list */}
+      {/* Lista de tarefas */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {filtered.length === 0 && (
-          <p className="text-center text-stone-400 text-sm py-8">No tasks match this filter.</p>
+          <p className="text-center text-stone-400 text-sm py-8">Nenhuma tarefa para este filtro.</p>
         )}
         {filtered.map(t => (
           <TaskCard
@@ -104,14 +104,12 @@ function TaskCard({ task: t, expanded, onToggleExpand, onToggleDone, onDelete, o
     <div className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all ${
       t.done ? "border-stone-100 opacity-60" : "border-stone-200"
     }`}>
-      {/* Left accent bar */}
       <div className="flex">
         <div className="w-1 shrink-0 rounded-l-2xl" style={{ background: aColor }} />
 
         <div className="flex-1 p-3">
-          {/* Header row */}
+          {/* Cabeçalho */}
           <div className="flex items-start gap-2">
-            {/* Done checkbox */}
             <button
               onClick={onToggleDone}
               className={`mt-0.5 w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
@@ -121,7 +119,6 @@ function TaskCard({ task: t, expanded, onToggleExpand, onToggleDone, onDelete, o
               {t.done && <span className="text-white text-xs leading-none">✓</span>}
             </button>
 
-            {/* Title + badges */}
             <div className="flex-1 min-w-0" onClick={onToggleExpand}>
               <p className={`text-sm font-medium leading-snug ${t.done ? "line-through text-stone-400" : "text-stone-800"}`}>
                 {t.title}
@@ -131,36 +128,34 @@ function TaskCard({ task: t, expanded, onToggleExpand, onToggleDone, onDelete, o
                   {pEmoji} {t.prio}
                 </span>
                 {t.notes && (
-                  <span className="text-[10px] text-stone-400">📝 note</span>
+                  <span className="text-[10px] text-stone-400">📝 nota</span>
                 )}
                 {t.steps.length > 0 && (
-                  <span className="text-[10px] text-stone-400">{t.steps.length} steps</span>
+                  <span className="text-[10px] text-stone-400">{t.steps.length} etapa{t.steps.length !== 1 ? "s" : ""}</span>
                 )}
               </div>
             </div>
 
-            {/* Expand button */}
             <button onClick={onToggleExpand} className="shrink-0 text-stone-300 text-sm p-1">
               {expanded ? "▲" : "▼"}
             </button>
           </div>
 
-          {/* Expanded content */}
+          {/* Conteúdo expandido */}
           {expanded && (
             <div className="mt-3 space-y-3 pl-7">
-              {/* Detail */}
               <p className="text-xs text-stone-500 leading-relaxed">{t.detail}</p>
 
-              {/* Objective */}
+              {/* Objetivo */}
               <div className="bg-stone-50 rounded-xl p-3">
-                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Objective</p>
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Objetivo</p>
                 <p className="text-xs text-stone-600">{t.obj}</p>
               </div>
 
-              {/* Steps */}
+              {/* Etapas */}
               {t.steps.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1.5">Steps</p>
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1.5">Etapas</p>
                   <ol className="space-y-1">
                     {t.steps.map((s, i) => (
                       <li key={i} className="flex items-start gap-2 text-xs text-stone-600">
@@ -175,9 +170,9 @@ function TaskCard({ task: t, expanded, onToggleExpand, onToggleDone, onDelete, o
                 </div>
               )}
 
-              {/* Notes */}
+              {/* Notas */}
               <div>
-                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1.5">Notes</p>
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1.5">Notas</p>
                 {editId === t.id ? (
                   <div className="space-y-2">
                     <textarea
@@ -185,28 +180,28 @@ function TaskCard({ task: t, expanded, onToggleExpand, onToggleDone, onDelete, o
                       onChange={e => setNoteDraft(e.target.value)}
                       rows={3}
                       className="w-full text-xs border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:border-stone-400 bg-white"
-                      placeholder="Add a note…"
+                      placeholder="Adicionar nota…"
                       autoFocus
                     />
                     <div className="flex gap-2">
                       <button onClick={() => onSaveNote(noteDraft)}
-                        className="text-xs bg-stone-800 text-white px-3 py-1.5 rounded-lg font-medium">Save</button>
+                        className="text-xs bg-stone-800 text-white px-3 py-1.5 rounded-lg font-medium">Salvar</button>
                       <button onClick={() => {}}
-                        className="text-xs text-stone-400 px-3 py-1.5 rounded-lg">Cancel</button>
+                        className="text-xs text-stone-400 px-3 py-1.5 rounded-lg">Cancelar</button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-start gap-2">
-                    <p className="flex-1 text-xs text-stone-500 italic">{t.notes || "No notes yet."}</p>
+                    <p className="flex-1 text-xs text-stone-500 italic">{t.notes || "Sem notas ainda."}</p>
                     <button onClick={startEdit} className="text-stone-300 text-xs shrink-0">✏️</button>
                   </div>
                 )}
               </div>
 
-              {/* Delete */}
+              {/* Remover */}
               <div className="pt-1">
                 <button onClick={onDelete} className="text-[10px] text-red-400 hover:text-red-600 transition-colors">
-                  Remove task
+                  Remover tarefa
                 </button>
               </div>
             </div>
