@@ -9,8 +9,9 @@ export const dbLoadTasks = async () => {
   if (error) throw error;
   return data.map(row => ({
     ...row,
-    steps: row.steps ?? [],
-    notes: row.notes ?? "",
+    steps:   row.steps   ?? [],
+    notes:   row.notes   ?? "",
+    project: row.project ?? "",
   }));
 };
 
@@ -25,8 +26,9 @@ export const dbUpsertTask = async (task) => {
     title:  task.title,
     detail: task.detail ?? "",
     obj:    task.obj    ?? "",
-    steps:  task.steps  ?? [],
-    notes:  task.notes  ?? "",
+    steps:   task.steps   ?? [],
+    notes:   task.notes   ?? "",
+    project: task.project ?? "",
   });
   if (error) console.error("upsertTask:", error.message);
 };
@@ -49,8 +51,9 @@ export const dbUpsertAllTasks = async (tasks) => {
     title:  t.title,
     detail: t.detail ?? "",
     obj:    t.obj    ?? "",
-    steps:  t.steps  ?? [],
-    notes:  t.notes  ?? "",
+    steps:   t.steps   ?? [],
+    notes:   t.notes   ?? "",
+    project: t.project ?? "",
   }));
   const { error } = await sb.from("tasks").upsert(rows);
   if (error) console.error("upsertAllTasks:", error.message);
@@ -102,4 +105,56 @@ export const dbUpsertAllDiary = async (diary) => {
   }));
   const { error } = await sb.from("diary").upsert(rows);
   if (error) console.error("upsertAllDiary:", error.message);
+};
+
+// ── Plano diário ───────────────────────────────────────────────────────────
+
+const planRow = (date, s) => ({
+  date,
+  slot:      s.slot,
+  start:     s.start,
+  end:       s.end,
+  label:     s.label     ?? "",
+  area:      s.area      ?? "",
+  task_id:   s.taskId    ?? null,
+  anchor:    s.anchor    ?? false,
+  suggested: s.suggested ?? false,
+  done:      s.done      ?? false,
+  obs:       s.obs       ?? "",
+});
+
+const fromPlanRow = (row) => ({
+  slot:      row.slot,
+  start:     row.start,
+  end:       row.end,
+  label:     row.label     ?? "",
+  area:      row.area      ?? "",
+  taskId:    row.task_id   ?? null,
+  anchor:    row.anchor    ?? false,
+  suggested: row.suggested ?? false,
+  done:      row.done      ?? false,
+  obs:       row.obs       ?? "",
+});
+
+export const dbLoadPlan = async (date) => {
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data, error } = await sb.from("plan").select("*").eq("date", date).order("slot");
+  if (error) throw error;
+  if (!data || data.length === 0) return null;
+  return data.map(fromPlanRow).sort((a, b) => a.start.localeCompare(b.start));
+};
+
+export const dbUpsertSlot = async (date, slot) => {
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb.from("plan").upsert(planRow(date, slot));
+  if (error) console.error("upsertSlot:", error.message);
+};
+
+export const dbUpsertAllPlan = async (date, slots) => {
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb.from("plan").upsert(slots.map(s => planRow(date, s)));
+  if (error) console.error("upsertAllPlan:", error.message);
 };

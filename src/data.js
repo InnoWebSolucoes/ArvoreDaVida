@@ -103,3 +103,57 @@ export const INIT_DIARY = {
     ]
   },
 };
+
+// ── Plano diário — 28 blocos de 30 min, das 07:00 às 21:00 ─────────────────
+
+export const SLOT_TIMES = Array.from({ length: 28 }, (_, i) => {
+  const s = 7 * 60 + i * 30, e = s + 30;
+  const fmt = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  return { start: fmt(s), end: fmt(e) };
+});
+
+export const FREE_LABEL = "— livre —";
+
+// Âncoras: blocos fixos da rotina. Dependem do dia da semana.
+const anchorsFor = (dow) => {
+  const isWD = dow >= 1 && dow <= 5;
+  const isGroupA = [1, 3, 5].includes(dow);
+  return {
+    0:  { label:"🌅 Theta + intenção da manhã",                              area:"seiva_elab", anchor:true },
+    1:  { label:"💊 Medicação + vitaminas",                                  area:"seiva",      anchor:true },
+    2:  { label:isWD ? "🚸 Jo — café da manhã e preparação" : "☕ Manhã calma", area:"tronco",    anchor:true },
+    3:  { label:isWD ? "🚗 Levar à escola" : "🌿 Livre",                      area:"tronco",     anchor:isWD },
+    4:  { label:"🍳 Cozinha — rega diária",                                   area:"tronco",     anchor:true },
+    5:  { label:(isGroupA ? "Grupo A: 🍳🚾⚠️🧱❇️" : "Grupo B: 🎰👬🥑🈴🪜") + " rega ½🍅 cada", area:"tronco", anchor:true },
+    19: { label:isWD ? "❤️ Jo em casa — tempo em família" : "🌿 Livre",       area:"tronco",     anchor:isWD },
+    24: { label:"🍽️ Jantar",                                                 area:"tronco",     anchor:true },
+    25: { label:"🍽️ Arrumar a cozinha",                                      area:"tronco",     anchor:true },
+    26: { label:"📋 Planear amanhã",                                          area:"seiva",      anchor:true },
+    27: { label:"🌙 Desacelerar",                                             area:"seiva",      anchor:true },
+  };
+};
+
+// Monta o plano do dia: âncoras fixas + sugestões das tarefas pendentes.
+export const buildPlan = (tasks, date = new Date()) => {
+  const anchors = anchorsFor(date.getDay());
+  const pool = [
+    ...tasks.filter(t => !t.done && t.prio === "regar").slice(0, 10),
+    ...tasks.filter(t => !t.done && t.prio === "nutrir").slice(0, 6),
+  ];
+  let pi = 0;
+  return SLOT_TIMES.map((time, i) => {
+    const a = anchors[i];
+    if (a) return { slot:"s"+i, ...time, label:a.label, area:a.area, taskId:null, anchor:a.anchor, suggested:false, done:false, obs:"" };
+    const sug = pool[pi++];
+    return {
+      slot:"s"+i, ...time,
+      label:     sug ? sug.title : FREE_LABEL,
+      area:      sug ? sug.area  : "",
+      taskId:    sug ? sug.id    : null,
+      anchor:    false,
+      suggested: !!sug,
+      done:      false,
+      obs:       "",
+    };
+  });
+};

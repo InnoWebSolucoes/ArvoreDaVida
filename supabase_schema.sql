@@ -34,3 +34,29 @@ alter table diary enable row level security;
 
 create policy "allow all" on tasks for all using (true) with check (true);
 create policy "allow all" on diary for all using (true) with check (true);
+
+-- ── Plan (daily 28 slots) ──────────────────────────────────────────────────
+-- One row per slot per day. `date` + `slot` is the identity.
+
+create table if not exists plan (
+  date      text not null,
+  slot      text not null,
+  start     text not null,
+  "end"     text not null,
+  label     text default '',
+  area      text default '',
+  task_id   text,
+  anchor    boolean default false,
+  suggested boolean default false,
+  done      boolean default false,
+  obs       text default '',
+  primary key (date, slot)
+);
+
+alter table plan enable row level security;
+
+create policy "allow all" on plan for all using (true) with check (true);
+
+-- ── Projects on tasks ──────────────────────────────────────────────────────
+
+alter table tasks add column if not exists project text default '';

@@ -3,6 +3,7 @@ import { useState } from "react";
 export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRIO, CAT_COLORS }) {
   const [areaFilter, setAreaFilter] = useState("all");
   const [prioFilter, setPrioFilter] = useState("all");
+  const [projFilter, setProjFilter] = useState("all");
   const [showDone,   setShowDone]   = useState(false);
   const [expanded,   setExpanded]   = useState(null);
   const [editId,     setEditId]     = useState(null);
@@ -12,8 +13,27 @@ export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRI
     if (!showDone && t.done) return false;
     if (areaFilter !== "all" && t.area !== areaFilter) return false;
     if (prioFilter !== "all" && t.prio !== prioFilter) return false;
+    if (projFilter !== "all" && (t.project || "") !== projFilter) return false;
     return true;
   });
+
+  // Projetos disponíveis dentro do filtro de área atual.
+  const projects = [...new Set(
+    tasks
+      .filter(t => areaFilter === "all" || t.area === areaFilter)
+      .map(t => t.project)
+      .filter(Boolean)
+  )].sort();
+
+  // Agrupa por projeto; tarefas sem projeto ficam em "Avulsas".
+  const groups = [];
+  for (const t of filtered) {
+    const name = t.project || "";
+    let g = groups.find(g => g.name === name);
+    if (!g) { g = { name, items: [] }; groups.push(g); }
+    g.items.push(t);
+  }
+  groups.sort((a, b) => (a.name === "" ? 1 : b.name === "" ? -1 : a.name.localeCompare(b.name)));
 
   const startEdit = (t) => { setEditId(t.id); setNoteDraft(t.notes || ""); };
 
@@ -23,13 +43,27 @@ export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRI
       <div className="sticky top-0 bg-[#faf8f5] z-10 px-4 pt-4 pb-2 space-y-2 border-b border-stone-200">
         {/* Filtro por área */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-          <FilterChip active={areaFilter === "all"} onClick={() => setAreaFilter("all")} color="#6b7280">Todas</FilterChip>
+          <FilterChip active={areaFilter === "all"} onClick={() => { setAreaFilter("all"); setProjFilter("all"); }} color="#6b7280">Todas</FilterChip>
           {AREAS.map(a => (
-            <FilterChip key={a.key} active={areaFilter === a.key} onClick={() => setAreaFilter(a.key)} color={a.color}>
+            <FilterChip key={a.key} active={areaFilter === a.key} onClick={() => { setAreaFilter(a.key); setProjFilter("all"); }} color={a.color}>
               {a.label}
             </FilterChip>
           ))}
         </div>
+        {/* Filtro por projeto */}
+        {projects.length > 0 && (
+          <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            <FilterChip active={projFilter === "all"} onClick={() => setProjFilter("all")} color="#6b7280" sm>
+              Todos os projetos
+            </FilterChip>
+            {projects.map(pr => (
+              <FilterChip key={pr} active={projFilter === pr} onClick={() => setProjFilter(pr)} color="#57534e" sm>
+                📁 {pr}
+              </FilterChip>
+            ))}
+          </div>
+        )}
+
         {/* Filtro por prioridade + mostrar feitas */}
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5 flex-1">
@@ -56,7 +90,20 @@ export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRI
         {filtered.length === 0 && (
           <p className="text-center text-stone-400 text-sm py-8">Nenhuma tarefa para este filtro.</p>
         )}
-        {filtered.map(t => (
+        {groups.map(g => (
+          <div key={g.name || "__solo"} className="space-y-2">
+            {(groups.length > 1 || g.name) && (
+              <div className="flex items-center gap-2 pt-1">
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
+                  {g.name ? `📁 ${g.name}` : "Avulsas"}
+                </p>
+                <span className="text-[10px] text-stone-300">
+                  {g.items.filter(t => t.done).length}/{g.items.length}
+                </span>
+                <div className="flex-1 h-px bg-stone-200" />
+              </div>
+            )}
+            {g.items.map(t => (
           <TaskCard
             key={t.id}
             task={t}
@@ -73,6 +120,8 @@ export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRI
             PRIO_COLORS={{ regar:"#2A6FAA", nutrir:"#3A7D3A", podar:"#8B5E3C" }}
             PRIO_EMOJI={{ regar:"💧", nutrir:"🌿", podar:"🌾" }}
           />
+            ))}
+          </div>
         ))}
       </div>
     </div>

@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { AREAS, PRIO, CAT_COLORS, CAT_LABELS, INIT_TASKS, INIT_DIARY, AI_MODEL, AI_URL } from "./data";
+import { AREAS, PRIO, CAT_COLORS, CAT_LABELS, INIT_TASKS, INIT_DIARY, AI_MODEL, AI_URL, buildPlan } from "./data";
 import { isConfigured, resetClient } from "./supabase";
 import {
   dbLoadTasks, dbUpsertTask, dbDeleteTask, dbUpsertAllTasks,
   dbLoadDiary, dbUpsertDiaryDay, dbUpsertAllDiary,
+  dbLoadPlan, dbUpsertSlot, dbUpsertAllPlan,
 } from "./db";
 import Dashboard from "./components/Dashboard";
 import Tasks     from "./components/Tasks";
+import Plan      from "./components/Plan";
 import Diary     from "./components/Diary";
 import AIPanel   from "./components/AIPanel";
 import Settings  from "./components/Settings";
@@ -18,6 +20,7 @@ const lsSet = (k, v)  => { try { localStorage.setItem(k, JSON.stringify(v)); } c
 
 const NAV = [
   { key:"dashboard", label:"Árvore",  icon:"🌳" },
+  { key:"plan",      label:"Plano",   icon:"📅" },
   { key:"tasks",     label:"Tarefas", icon:"✅" },
   { key:"diary",     label:"Diário",  icon:"📖" },
   { key:"ai",        label:"IA",      icon:"🤖" },
@@ -28,6 +31,13 @@ export default function App() {
   const [tasks,   setTasks]   = useState(() => lsGet("mytree-v2",    INIT_TASKS));
   const [diary,   setDiary]   = useState(() => lsGet("mydiary-v2",   INIT_DIARY));
   const [apiKey,  setApiKey]  = useState(() => lsGet("mytree-apikey", ""));
+  const [planDate]            = useState(today);
+  const [slots,   setSlots]   = useState(() => {
+    const cached = lsGet("myplan-v1", null);
+    return cached && cached.date === today() && Array.isArray(cached.slots)
+      ? cached.slots
+      : buildPlan(lsGet("mytree-v2", INIT_TASKS));
+  });
   const [tab,     setTab]     = useState("dashboard");
   const [notif,   setNotif]   = useState(null);
   const [sbReady, setSbReady] = useState(false);
@@ -37,15 +47,23 @@ export default function App() {
   useEffect(() => { lsSet("mytree-v2",    tasks);  }, [tasks]);
   useEffect(() => { lsSet("mydiary-v2",   diary);  }, [diary]);
   useEffect(() => { lsSet("mytree-apikey", apiKey); }, [apiKey]);
+  useEffect(() => { lsSet("myplan-v1", { date: planDate, slots }); }, [planDate, slots]);
 
   // ── Load from Supabase on mount ─────────────────────────────────────────
   useEffect(() => {
     if (!isConfigured()) return;
     setSyncing(true);
-    Promise.all([dbLoadTasks(), dbLoadDiary()])
-      .then(([t, d]) => {
+    Promise.all([dbLoadTasks(), dbLoadDiary(), dbLoadPlan(planDate)])
+      .then(([t, d, p]) => {
         if (t && t.length > 0) setTasks(t);
         if (d && Object.keys(d).length > 0) setDiary(d);
+        // Sem plano guardado para hoje: gera um a partir das tarefas carregadas.
+        if (p && p.length > 0) setSlots(p);
+        else {
+          const fresh = buildPlan(t && t.length > 0 ? t : tasks);
+          setSlots(fresh);
+          dbUpsertAllPlan(planDate, fresh);
+        }
         setSbReady(true);
       })
       .catch(e => notify("Erro ao carregar Supabase: " + e.message))
@@ -87,6 +105,51 @@ export default function App() {
     });
   };
 
+  // ── Plan operations (sync to Supabase) ─────────────────────────────────
+  const patchSlot = (slotId, patch) => {
+    setSlots(ss => {
+      const updated = ss.map(s => s.slot === slotId ? { ...s, ...patch } : s);
+      const changed = updated.find(s => s.slot === slotId);
+      dbUpsertSlot(planDate, changed);
+      return updated;
+    });
+  };
+
+  // Concluir um bloco ligado a uma tarefa conclui também a tarefa.
+  const toggleSlot = (slotId) => {
+    setSlots(ss => {
+      const target = ss.find(s => s.slot === slotId);
+      if (!target) return ss;
+      const nowDone = !target.done;
+      if (nowDone && target.taskId) {
+        setTasks(ts => {
+          const upd = ts.map(t => t.id === target.taskId ? { ...t, done: true } : t);
+          const ch = upd.find(t => t.id === target.taskId);
+          if (ch) dbUpsertTask(ch);
+          return upd;
+        });
+      }
+      const updated = ss.map(s => s.slot === slotId ? { ...s, done: nowDone } : s);
+      dbUpsertSlot(planDate, updated.find(s => s.slot === slotId));
+      return updated;
+    });
+  };
+
+  const updateSlot = (slotId, patch) => patchSlot(slotId, patch);
+  const updateObs  = (slotId, obs)   => patchSlot(slotId, { obs });
+
+  // Regenera apenas os blocos não-âncora que ainda não foram feitos,
+  // preservando o que já foi concluído ou editado à mão.
+  const regenPlan = () => {
+    setSlots(ss => {
+      const fresh = buildPlan(tasks);
+      const merged = ss.map((s, i) => (s.done || s.anchor || !s.suggested) ? s : fresh[i]);
+      dbUpsertAllPlan(planDate, merged);
+      return merged;
+    });
+    notify("Plano atualizado ✓");
+  };
+
   // ── Diary operations (sync to Supabase) ────────────────────────────────
   const updateDiaryDay = useCallback((date, patch) => {
     setDiary(d => {
@@ -103,6 +166,7 @@ export default function App() {
     try {
       await dbUpsertAllTasks(tasks);
       await dbUpsertAllDiary(diary);
+      await dbUpsertAllPlan(planDate, slots);
       setSbReady(true);
       notify("Sincronizado com Supabase ✓");
     } catch (e) {
@@ -140,10 +204,11 @@ export default function App() {
   };
 
   const shared = {
-    tasks, diary,
+    tasks, diary, slots, planDate,
     setDiary: updateDiaryDay,
     apiKey: resolvedAiKey,
     toggleDone, delTask, saveNote, addTasks,
+    toggleSlot, updateSlot, updateObs, regenPlan,
     callAI, notify,
     AREAS, PRIO, CAT_COLORS, CAT_LABELS, today,
   };
@@ -189,6 +254,7 @@ export default function App() {
         {/* Tab content */}
         <div className="flex-1 overflow-y-auto tab-content">
           {tab === "dashboard" && <Dashboard {...shared} />}
+          {tab === "plan"      && <Plan      {...shared} />}
           {tab === "tasks"     && <Tasks     {...shared} />}
           {tab === "diary"     && <Diary     {...shared} />}
           {tab === "ai"        && <AIPanel   {...shared} />}
