@@ -112,8 +112,8 @@ export const dbUpsertAllDiary = async (diary) => {
 const planRow = (date, s) => ({
   date,
   slot:      s.slot,
-  start:     s.start,
-  end:       s.end,
+  start_at:  s.start,
+  end_at:    s.end,
   label:     s.label     ?? "",
   area:      s.area      ?? "",
   task_id:   s.taskId    ?? null,
@@ -125,8 +125,8 @@ const planRow = (date, s) => ({
 
 const fromPlanRow = (row) => ({
   slot:      row.slot,
-  start:     row.start,
-  end:       row.end,
+  start:     row.start_at,
+  end:       row.end_at,
   label:     row.label     ?? "",
   area:      row.area      ?? "",
   taskId:    row.task_id   ?? null,
