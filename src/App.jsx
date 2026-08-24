@@ -66,7 +66,7 @@ export default function App() {
         }
         setSbReady(true);
       })
-      .catch(e => notify("Erro ao carregar Supabase: " + e.message))
+      .catch(e => notify("Não foi possível ligar. As suas notas ficam guardadas neste aparelho."))
       .finally(() => setSyncing(false));
   }, []);
 
@@ -180,7 +180,7 @@ export default function App() {
   const resolvedAiKey = apiKey || import.meta.env.VITE_AI_KEY || "";
 
   const callAI = async (userContent, system, _maxTokens = 1000) => {
-    if (!resolvedAiKey) throw new Error("Sem chave de IA. Adicione nas Configurações.");
+    if (!resolvedAiKey) throw new Error("O assistente não está disponível de momento.");
     const body = {
       model:        AI_MODEL,
       instructions: system,
@@ -220,8 +220,8 @@ export default function App() {
       <aside className="hidden md:flex flex-col w-52 shrink-0 bg-white border-r border-stone-200 py-6 gap-1">
         <div className="px-5 mb-4">
           <h1 className="text-lg font-semibold text-stone-800">🌳 Árvore da Vida</h1>
-          {sbReady && <p className="text-[10px] text-green-500 mt-0.5">● Supabase</p>}
-          {syncing  && <p className="text-[10px] text-amber-500 mt-0.5">⟳ Sincronizando…</p>}
+          {syncing      && <p className="text-[10px] text-amber-500 mt-0.5">⟳ A guardar…</p>}
+          {sbReady && !syncing && <p className="text-[10px] text-green-500 mt-0.5">● Guardado</p>}
         </div>
         {NAV.map(n => (
           <button
@@ -245,8 +245,8 @@ export default function App() {
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-stone-200 shrink-0">
           <div className="flex items-center gap-2">
             <h1 className="text-base font-semibold text-stone-800">🌳 Árvore da Vida</h1>
-            {sbReady  && <span className="text-[9px] text-green-500 font-medium">● BD</span>}
-            {syncing  && <span className="text-[9px] text-amber-500 font-medium">⟳</span>}
+            {syncing      && <span className="text-[9px] text-amber-500 font-medium">⟳</span>}
+            {sbReady && !syncing && <span className="text-[9px] text-green-500 font-medium">●</span>}
           </div>
           <span className="text-xs text-stone-400 font-medium">{NAV.find(n => n.key === tab)?.label}</span>
         </header>
