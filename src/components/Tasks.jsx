@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
-export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRIO, CAT_COLORS }) {
+export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRIO, CAT_COLORS, focusTask, setFocusTask, focusArea, setFocusArea }) {
   const [areaFilter, setAreaFilter] = useState("all");
   const [prioFilter, setPrioFilter] = useState("all");
   const [projFilter, setProjFilter] = useState("all");
@@ -8,6 +8,44 @@ export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRI
   const [expanded,   setExpanded]   = useState(null);
   const [editId,     setEditId]     = useState(null);
   const [noteDraft,  setNoteDraft]  = useState("");
+  const [flash,      setFlash]      = useState(null);
+  const rowRefs = useRef({});
+
+  // Uma tarefa aberta a partir de outro separador. Os filtros sao repostos
+  // durante a renderizacao (nao num efeito) para a tarefa nunca ficar
+  // escondida por um filtro activo.
+  // Uma area escolhida no painel: aplica o filtro correspondente.
+  const [handledArea, setHandledArea] = useState(null);
+  if (focusArea && focusArea !== handledArea) {
+    setHandledArea(focusArea);
+    setAreaFilter(focusArea);
+    setPrioFilter("all");
+    setProjFilter("all");
+    setFocusArea(null);
+  }
+
+  const [handled, setHandled] = useState(null);
+  const pending = focusTask && focusTask !== handled ? focusTask : null;
+  if (pending) {
+    const t = tasks.find(x => x.id === pending);
+    setHandled(pending);
+    if (t) {
+      setAreaFilter("all");
+      setPrioFilter("all");
+      setProjFilter("all");
+      if (t.done) setShowDone(true);
+      setExpanded(pending);
+      setFlash(pending);
+    }
+  }
+
+  // Depois de pintar: leva a tarefa para a vista e apaga o destaque.
+  useEffect(() => {
+    if (!flash) return;
+    rowRefs.current[flash]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const id = setTimeout(() => { setFlash(null); setFocusTask(null); }, 1800);
+    return () => clearTimeout(id);
+  }, [flash, setFocusTask]);
 
   const filtered = tasks.filter(t => {
     if (!showDone && t.done) return false;
@@ -104,8 +142,14 @@ export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRI
               </div>
             )}
             {g.items.map(t => (
-          <TaskCard
+          <div
             key={t.id}
+            ref={el => { rowRefs.current[t.id] = el; }}
+            className={`rounded-2xl transition-all duration-500 ${
+              flash === t.id ? "ring-2 ring-amber-300 ring-offset-2 ring-offset-[#faf8f5]" : ""
+            }`}
+          >
+          <TaskCard
             task={t}
             expanded={expanded === t.id}
             onToggleExpand={() => setExpanded(expanded === t.id ? null : t.id)}
@@ -120,6 +164,7 @@ export default function Tasks({ tasks, toggleDone, delTask, saveNote, AREAS, PRI
             PRIO_COLORS={{ regar:"#2A6FAA", nutrir:"#3A7D3A", podar:"#8B5E3C" }}
             PRIO_EMOJI={{ regar:"💧", nutrir:"🌿", podar:"🌾" }}
           />
+          </div>
             ))}
           </div>
         ))}

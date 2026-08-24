@@ -6,7 +6,7 @@ const PRIO_EMOJI  = { regar:"💧", nutrir:"🌿", podar:"🌾" };
 
 export default function Plan({
   slots, tasks, planDate,
-  toggleSlot, updateSlot, updateObs, regenPlan,
+  toggleSlot, updateSlot, updateObs, regenPlan, openTask,
   CAT_COLORS, CAT_LABELS,
 }) {
   const [editSlot,  setEditSlot]  = useState(null);
@@ -128,6 +128,18 @@ export default function Plan({
                               className="text-xs text-stone-400 px-3 py-1.5 rounded-lg">Cancelar</button>
                           </div>
                         </div>
+                      ) : s.taskId ? (
+                        <button
+                          onClick={() => openTask(s.taskId)}
+                          className="text-left w-full group"
+                        >
+                          <p className={`text-sm leading-snug ${
+                            s.done ? "line-through text-stone-400" : "font-medium text-stone-800 group-hover:text-stone-950"
+                          }`}>
+                            {s.label}
+                            <span className="text-stone-300 text-xs ml-1.5">›</span>
+                          </p>
+                        </button>
                       ) : (
                         <p className={`text-sm leading-snug ${
                           s.done ? "line-through text-stone-400"

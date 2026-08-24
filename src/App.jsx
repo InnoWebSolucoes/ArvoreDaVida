@@ -39,6 +39,10 @@ export default function App() {
       : buildPlan(lsGet("mytree-v2", INIT_TASKS));
   });
   const [tab,     setTab]     = useState("dashboard");
+  // Tarefa a abrir noutro separador. Consumida pelo separador de destino.
+  const [focusTask, setFocusTask] = useState(null);
+  const [focusDiary, setFocusDiary] = useState(null);
+  const [focusArea,  setFocusArea]  = useState(null);
   const [notif,   setNotif]   = useState(null);
   const [sbReady, setSbReady] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -71,6 +75,19 @@ export default function App() {
   }, []);
 
   const notify = (m) => { setNotif(m); setTimeout(() => setNotif(null), 2800); };
+
+  // Salta para a tarefa nas Tarefas, abrindo-a e limpando os filtros.
+  const openTask = (id) => {
+    if (!id) return;
+    setFocusTask(id);
+    setTab("tasks");
+  };
+
+  // Salta para um dia do diario.
+  const openDiaryDay = (date) => { setFocusDiary(date); setTab("diary"); };
+
+  // Salta para as Tarefas ja filtradas por uma area da arvore.
+  const openArea = (areaKey) => { setFocusArea(areaKey); setTab("tasks"); };
 
   // ── Task operations (sync to Supabase) ─────────────────────────────────
   const toggleDone = (id) => {
@@ -209,6 +226,9 @@ export default function App() {
     apiKey: resolvedAiKey,
     toggleDone, delTask, saveNote, addTasks,
     toggleSlot, updateSlot, updateObs, regenPlan,
+    openTask, openDiaryDay, openArea, setTab,
+    focusTask, setFocusTask, focusDiary, setFocusDiary,
+    focusArea, setFocusArea,
     callAI, notify,
     AREAS, PRIO, CAT_COLORS, CAT_LABELS, today,
   };

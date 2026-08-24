@@ -4,7 +4,7 @@ const HOUR_GREETING = (h) =>
 : h < 20 ? "Boa tarde"
          : "Boa noite";
 
-export default function Dashboard({ tasks, AREAS, slots }) {
+export default function Dashboard({ tasks, AREAS, slots, openTask, openArea, setTab }) {
   const active = tasks.filter(t => t.area !== "frutos");
   const total  = active.length;
   const done   = active.filter(t => t.done).length;
@@ -31,7 +31,10 @@ export default function Dashboard({ tasks, AREAS, slots }) {
 
       {/* A seguir — o bloco do plano a decorrer */}
       {currentSlot && (
-        <section className="bg-stone-800 rounded-2xl p-4 text-white">
+        <button
+          onClick={() => setTab("plan")}
+          className="w-full text-left bg-stone-800 rounded-2xl p-4 text-white hover:bg-stone-700 transition-colors"
+        >
           <p className="text-[10px] uppercase tracking-wider text-stone-400 mb-1.5">Agora</p>
           <div className="flex items-baseline gap-2.5">
             <span className="text-xs font-medium text-stone-400 shrink-0">{currentSlot.start}</span>
@@ -39,11 +42,14 @@ export default function Dashboard({ tasks, AREAS, slots }) {
               {currentSlot.label}
             </p>
           </div>
-        </section>
+        </button>
       )}
 
       {/* Progresso */}
-      <section className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
+      <button
+        onClick={() => setTab("tasks")}
+        className="w-full text-left bg-white rounded-2xl p-5 shadow-sm border border-stone-100 hover:border-stone-300 transition-colors"
+      >
         <div className="flex items-end justify-between mb-3">
           <div>
             <p className="text-sm font-medium text-stone-600">A sua árvore</p>
@@ -57,7 +63,7 @@ export default function Dashboard({ tasks, AREAS, slots }) {
             style={{ width: `${pct}%`, background: "linear-gradient(90deg,#3A7D3A,#2A7A55)" }}
           />
         </div>
-      </section>
+      </button>
 
       {/* Precisa de atenção */}
       {urgent.length > 0 && (
@@ -66,13 +72,20 @@ export default function Dashboard({ tasks, AREAS, slots }) {
             Precisa de atenção
           </h2>
           {urgent.slice(0, 4).map(t => (
-            <div key={t.id} className="bg-white rounded-xl px-4 py-3 shadow-sm border border-stone-100 flex items-center gap-3">
+            <button
+              key={t.id}
+              onClick={() => openTask(t.id)}
+              className="w-full text-left bg-white rounded-xl px-4 py-3 shadow-sm border border-stone-100 flex items-center gap-3 hover:border-stone-300 active:bg-stone-50 transition-colors"
+            >
               <span className="text-base shrink-0">💧</span>
               <p className="text-sm text-stone-700 leading-snug min-w-0 flex-1">{t.title}</p>
-            </div>
+              <span className="text-stone-300 text-xs shrink-0">›</span>
+            </button>
           ))}
           {urgent.length > 4 && (
-            <p className="text-xs text-stone-400 pl-1">e mais {urgent.length - 4}</p>
+            <button onClick={() => setTab("tasks")} className="text-xs text-stone-400 pl-1 hover:text-stone-600 transition-colors">
+              e mais {urgent.length - 4}
+            </button>
           )}
         </section>
       )}
@@ -87,7 +100,11 @@ export default function Dashboard({ tasks, AREAS, slots }) {
           const aUrg  = aAll.filter(t => !t.done && t.prio === "regar").length;
 
           return (
-            <div key={area.key} className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
+            <button
+              key={area.key}
+              onClick={() => openArea(area.key)}
+              className="w-full text-left bg-white rounded-2xl p-4 shadow-sm border border-stone-100 hover:border-stone-300 active:bg-stone-50 transition-colors"
+            >
               <div className="flex items-center justify-between gap-3 mb-2.5">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-sm font-semibold text-stone-800 truncate">{area.label}</span>
@@ -105,7 +122,7 @@ export default function Dashboard({ tasks, AREAS, slots }) {
                   style={{ width: `${aPct}%`, background: area.color }}
                 />
               </div>
-            </div>
+            </button>
           );
         })}
       </section>
@@ -114,10 +131,15 @@ export default function Dashboard({ tasks, AREAS, slots }) {
       <section className="space-y-2">
         <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Feito recentemente</h2>
         {tasks.filter(t => t.done).slice(-3).reverse().map(t => (
-          <div key={t.id} className="bg-white rounded-xl px-4 py-3 shadow-sm border border-stone-100 flex items-center gap-3">
+          <button
+            key={t.id}
+            onClick={() => openTask(t.id)}
+            className="w-full text-left bg-white rounded-xl px-4 py-3 shadow-sm border border-stone-100 flex items-center gap-3 hover:border-stone-300 active:bg-stone-50 transition-colors"
+          >
             <span className="w-5 h-5 rounded-full bg-green-400 text-white text-xs flex items-center justify-center shrink-0">✓</span>
-            <p className="text-sm text-stone-600 truncate min-w-0">{t.title}</p>
-          </div>
+            <p className="text-sm text-stone-600 truncate min-w-0 flex-1">{t.title}</p>
+            <span className="text-stone-300 text-xs shrink-0">›</span>
+          </button>
         ))}
         {tasks.filter(t => t.done).length === 0 && (
           <p className="text-sm text-stone-400 text-center py-6">Ainda nada. Comece por uma coisa pequena.</p>
