@@ -57,7 +57,7 @@ export default function Settings({ apiKey, setApiKey, notify, AREAS, sbReady, sy
       {/* Sobre */}
       <section className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 text-center space-y-1">
         <p className="text-sm font-semibold text-stone-700">🌳 Árvore da Vida</p>
-        <p className="text-xs text-stone-400">Um organizador pessoal vivo — raízes, tronco, seiva, flores, frutos.</p>
+        <p className="text-xs text-stone-400">Um organizador pessoal vivo. Raízes, tronco, seiva, flores, frutos.</p>
       </section>
 
       {/* Painel técnico — escondido por omissão */}
@@ -135,7 +135,7 @@ function TechPanel({ apiKey, setApiKey, notify, sbReady, syncing, onSupabaseSave
 
         {envSb ? (
           <p className="text-[10px] text-green-700 bg-green-50 rounded-lg px-3 py-2">
-            ✓ Credenciais carregadas do ambiente — nada a fazer aqui.
+            ✓ Credenciais carregadas do ambiente. Nada a fazer aqui.
           </p>
         ) : (
           <>
@@ -172,7 +172,7 @@ function TechPanel({ apiKey, setApiKey, notify, sbReady, syncing, onSupabaseSave
         </div>
         {envAiKey ? (
           <p className="text-[10px] text-green-700 bg-green-50 rounded-lg px-3 py-2">
-            ✓ Chave carregada do ambiente — nada a fazer aqui.
+            ✓ Chave carregada do ambiente. Nada a fazer aqui.
           </p>
         ) : (
           <>

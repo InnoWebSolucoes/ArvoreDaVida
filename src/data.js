@@ -112,7 +112,7 @@ export const SLOT_TIMES = Array.from({ length: 28 }, (_, i) => {
   return { start: fmt(s), end: fmt(e) };
 });
 
-export const FREE_LABEL = "— livre —";
+export const FREE_LABEL = "livre";
 
 // Âncoras: blocos fixos da rotina. Dependem do dia da semana.
 const anchorsFor = (dow) => {
@@ -121,11 +121,11 @@ const anchorsFor = (dow) => {
   return {
     0:  { label:"🌅 Theta + intenção da manhã",                              area:"seiva_elab", anchor:true },
     1:  { label:"💊 Medicação + vitaminas",                                  area:"seiva",      anchor:true },
-    2:  { label:isWD ? "🚸 Jo — café da manhã e preparação" : "☕ Manhã calma", area:"tronco",    anchor:true },
+    2:  { label:isWD ? "🚸 Jo, café e preparação" : "☕ Manhã calma", area:"tronco",    anchor:true },
     3:  { label:isWD ? "🚗 Levar à escola" : "🌿 Livre",                      area:"tronco",     anchor:isWD },
-    4:  { label:"🍳 Cozinha — rega diária",                                   area:"tronco",     anchor:true },
+    4:  { label:"🍳 Cozinha, rega diária",                                   area:"tronco",     anchor:true },
     5:  { label:(isGroupA ? "Grupo A: 🍳🚾⚠️🧱❇️" : "Grupo B: 🎰👬🥑🈴🪜") + " rega ½🍅 cada", area:"tronco", anchor:true },
-    19: { label:isWD ? "❤️ Jo em casa — tempo em família" : "🌿 Livre",       area:"tronco",     anchor:isWD },
+    19: { label:isWD ? "❤️ Jo em casa, tempo em família" : "🌿 Livre",       area:"tronco",     anchor:isWD },
     24: { label:"🍽️ Jantar",                                                 area:"tronco",     anchor:true },
     25: { label:"🍽️ Arrumar a cozinha",                                      area:"tronco",     anchor:true },
     26: { label:"📋 Planear amanhã",                                          area:"seiva",      anchor:true },

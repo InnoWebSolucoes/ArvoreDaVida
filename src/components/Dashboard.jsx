@@ -1,97 +1,135 @@
-export default function Dashboard({ tasks, AREAS }) {
-  const total  = tasks.length;
-  const done   = tasks.filter(t => t.done).length;
+const HOUR_GREETING = (h) =>
+  h < 5  ? "Boa noite"
+: h < 13 ? "Bom dia"
+: h < 20 ? "Boa tarde"
+         : "Boa noite";
+
+export default function Dashboard({ tasks, AREAS, slots }) {
+  const active = tasks.filter(t => t.area !== "frutos");
+  const total  = active.length;
+  const done   = active.filter(t => t.done).length;
   const pct    = total > 0 ? Math.round((done / total) * 100) : 0;
-  const urgent = tasks.filter(t => !t.done && t.prio === "regar").length;
+  const urgent = active.filter(t => !t.done && t.prio === "regar");
+
+  const now  = new Date();
+  const hour = now.getHours();
+
+  // Bloco do plano a decorrer agora.
+  const nowHM = `${String(hour).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const currentSlot = (slots || []).find(s => s.start <= nowHM && nowHM < s.end);
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
 
-      {/* Resumo */}
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Total"       value={total}  color="#3A7D3A" />
-        <StatCard label="Concluídas"  value={done}   color="#2A7A55" />
-        <StatCard label="💧 Urgentes" value={urgent} color="#AA3020" />
-      </div>
+      {/* Saudação */}
+      <header className="pt-1">
+        <h1 className="text-xl font-semibold text-stone-800 tracking-tight">
+          {HOUR_GREETING(hour)}
+        </h1>
+        <p className="text-xs text-stone-400 mt-1">{prettyToday(now)}</p>
+      </header>
 
-      {/* Progresso geral */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-stone-600">Progresso Geral</span>
-          <span className="text-sm font-bold text-stone-800">{pct}%</span>
+      {/* A seguir — o bloco do plano a decorrer */}
+      {currentSlot && (
+        <section className="bg-stone-800 rounded-2xl p-4 text-white">
+          <p className="text-[10px] uppercase tracking-wider text-stone-400 mb-1.5">Agora</p>
+          <div className="flex items-baseline gap-2.5">
+            <span className="text-xs font-medium text-stone-400 shrink-0">{currentSlot.start}</span>
+            <p className={`text-sm leading-snug ${currentSlot.done ? "line-through text-stone-500" : "text-white"}`}>
+              {currentSlot.label}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* Progresso */}
+      <section className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
+        <div className="flex items-end justify-between mb-3">
+          <div>
+            <p className="text-sm font-medium text-stone-600">A sua árvore</p>
+            <p className="text-xs text-stone-400 mt-0.5">{done} de {total} tarefas</p>
+          </div>
+          <span className="text-3xl font-semibold text-stone-800 leading-none tabular-nums">{pct}%</span>
         </div>
-        <div className="h-2.5 bg-stone-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${pct}%`, background: "#3A7D3A" }}
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${pct}%`, background: "linear-gradient(90deg,#3A7D3A,#2A7A55)" }}
           />
         </div>
-      </div>
+      </section>
+
+      {/* Precisa de atenção */}
+      {urgent.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
+            Precisa de atenção
+          </h2>
+          {urgent.slice(0, 4).map(t => (
+            <div key={t.id} className="bg-white rounded-xl px-4 py-3 shadow-sm border border-stone-100 flex items-center gap-3">
+              <span className="text-base shrink-0">💧</span>
+              <p className="text-sm text-stone-700 leading-snug min-w-0 flex-1">{t.title}</p>
+            </div>
+          ))}
+          {urgent.length > 4 && (
+            <p className="text-xs text-stone-400 pl-1">e mais {urgent.length - 4}</p>
+          )}
+        </section>
+      )}
 
       {/* Por área */}
-      <div className="space-y-3">
-        <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Por Área</h2>
+      <section className="space-y-2">
+        <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Por área</h2>
         {AREAS.map(area => {
-          const aTotal = tasks.filter(t => t.area === area.key).length;
-          const aDone  = tasks.filter(t => t.area === area.key && t.done).length;
-          const aPct   = aTotal > 0 ? Math.round((aDone / aTotal) * 100) : 0;
-          const aUrg   = tasks.filter(t => t.area === area.key && !t.done && t.prio === "regar").length;
+          const aAll  = tasks.filter(t => t.area === area.key);
+          const aDone = aAll.filter(t => t.done).length;
+          const aPct  = aAll.length > 0 ? Math.round((aDone / aAll.length) * 100) : 0;
+          const aUrg  = aAll.filter(t => !t.done && t.prio === "regar").length;
 
           return (
             <div key={area.key} className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-sm font-semibold text-stone-800">{area.label}</span>
-                    {aUrg > 0 && (
-                      <span className="text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full font-medium">
-                        {aUrg} urgente{aUrg > 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-stone-400 leading-snug line-clamp-2">{area.desc}</p>
+              <div className="flex items-center justify-between gap-3 mb-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm font-semibold text-stone-800 truncate">{area.label}</span>
+                  {aUrg > 0 && (
+                    <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full font-medium shrink-0">
+                      {aUrg}
+                    </span>
+                  )}
                 </div>
-                <div className="ml-3 text-right shrink-0">
-                  <span className="text-lg font-bold" style={{ color: area.color }}>{aPct}%</span>
-                  <p className="text-xs text-stone-400">{aDone}/{aTotal}</p>
-                </div>
+                <span className="text-xs text-stone-400 shrink-0 tabular-nums">{aDone}/{aAll.length}</span>
               </div>
               <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-500"
+                  className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${aPct}%`, background: area.color }}
                 />
               </div>
             </div>
           );
         })}
-      </div>
+      </section>
 
-      {/* Recém concluídas */}
-      <div className="space-y-2">
-        <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Concluídas Recentemente</h2>
+      {/* Conquistas recentes */}
+      <section className="space-y-2">
+        <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Feito recentemente</h2>
         {tasks.filter(t => t.done).slice(-3).reverse().map(t => (
           <div key={t.id} className="bg-white rounded-xl px-4 py-3 shadow-sm border border-stone-100 flex items-center gap-3">
-            <span className="text-green-500 text-lg shrink-0">✓</span>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-stone-700 truncate">{t.title}</p>
-              {t.notes && <p className="text-xs text-stone-400 truncate">{t.notes}</p>}
-            </div>
+            <span className="w-5 h-5 rounded-full bg-green-400 text-white text-xs flex items-center justify-center shrink-0">✓</span>
+            <p className="text-sm text-stone-600 truncate min-w-0">{t.title}</p>
           </div>
         ))}
         {tasks.filter(t => t.done).length === 0 && (
-          <p className="text-sm text-stone-400 text-center py-4">Nenhuma tarefa concluída ainda.</p>
+          <p className="text-sm text-stone-400 text-center py-6">Ainda nada. Comece por uma coisa pequena.</p>
         )}
-      </div>
+      </section>
     </div>
   );
 }
 
-function StatCard({ label, value, color }) {
-  return (
-    <div className="bg-white rounded-2xl p-3 shadow-sm border border-stone-100 text-center">
-      <p className="text-2xl font-bold" style={{ color }}>{value}</p>
-      <p className="text-xs text-stone-500 mt-0.5">{label}</p>
-    </div>
-  );
+const DAYS = ["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
+const MONTHS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
+function prettyToday(d) {
+  return `${DAYS[d.getDay()]}, ${d.getDate()} de ${MONTHS[d.getMonth()]}`;
 }

@@ -106,7 +106,7 @@ export default function Diary({ diary, setDiary, CAT_COLORS, CAT_LABELS, today, 
               </div>
               {day.note && <p className="text-xs text-stone-500 leading-relaxed">{day.note}</p>}
               {!day.mood && !day.note && (
-                <p className="text-xs text-stone-300 italic">Sem resumo ainda — toque em Editar para adicionar.</p>
+                <p className="text-xs text-stone-300 italic">Sem resumo ainda. Toque em Editar para adicionar.</p>
               )}
             </div>
           )}
