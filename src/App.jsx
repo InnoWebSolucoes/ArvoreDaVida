@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { AREAS, PRIO, CAT_COLORS, CAT_LABELS, INIT_TASKS, INIT_DIARY, AI_MODEL, AI_URL, buildPlan } from "./data";
-import { isConfigured, resetClient } from "./supabase";
+import { isConfigured } from "./supabase";
 import {
   dbLoadTasks, dbUpsertTask, dbDeleteTask, dbUpsertAllTasks,
-  dbLoadDiary, dbUpsertDiaryDay, dbUpsertAllDiary,
+  dbLoadDiary, dbUpsertDiaryDay,
   dbLoadPlan, dbUpsertSlot, dbUpsertAllPlan,
 } from "./db";
 import Dashboard from "./components/Dashboard";
@@ -11,7 +11,6 @@ import Tasks     from "./components/Tasks";
 import Plan      from "./components/Plan";
 import Diary     from "./components/Diary";
 import AIPanel   from "./components/AIPanel";
-import Settings  from "./components/Settings";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -24,13 +23,11 @@ const NAV = [
   { key:"tasks",     label:"Tarefas", icon:"✅" },
   { key:"diary",     label:"Diário",  icon:"📖" },
   { key:"ai",        label:"IA",      icon:"🤖" },
-  { key:"settings",  label:"Config",  icon:"⚙️" },
 ];
 
 export default function App() {
   const [tasks,   setTasks]   = useState(() => lsGet("mytree-v2",    INIT_TASKS));
   const [diary,   setDiary]   = useState(() => lsGet("mydiary-v2",   INIT_DIARY));
-  const [apiKey,  setApiKey]  = useState(() => lsGet("mytree-apikey", ""));
   const [planDate]            = useState(today);
   const [slots,   setSlots]   = useState(() => {
     const cached = lsGet("myplan-v1", null);
@@ -50,7 +47,6 @@ export default function App() {
   // ── Persist to localStorage ─────────────────────────────────────────────
   useEffect(() => { lsSet("mytree-v2",    tasks);  }, [tasks]);
   useEffect(() => { lsSet("mydiary-v2",   diary);  }, [diary]);
-  useEffect(() => { lsSet("mytree-apikey", apiKey); }, [apiKey]);
   useEffect(() => { lsSet("myplan-v1", { date: planDate, slots }); }, [planDate, slots]);
 
   // ── Load from Supabase on mount ─────────────────────────────────────────
@@ -176,25 +172,8 @@ export default function App() {
     });
   }, []);
 
-  // ── Called from Settings after Supabase credentials are saved ──────────
-  const onSupabaseSaved = async () => {
-    resetClient();
-    setSyncing(true);
-    try {
-      await dbUpsertAllTasks(tasks);
-      await dbUpsertAllDiary(diary);
-      await dbUpsertAllPlan(planDate, slots);
-      setSbReady(true);
-      notify("Sincronizado com Supabase ✓");
-    } catch (e) {
-      notify("Erro de sincronização: " + e.message);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   // ── OpenAI Responses API helper ─────────────────────────────────────────
-  const resolvedAiKey = apiKey || import.meta.env.VITE_AI_KEY || "";
+  const resolvedAiKey = import.meta.env.VITE_AI_KEY || "";
 
   const callAI = async (userContent, system, _maxTokens = 1000) => {
     if (!resolvedAiKey) throw new Error("O assistente não está disponível de momento.");
@@ -278,14 +257,6 @@ export default function App() {
           {tab === "tasks"     && <Tasks     {...shared} />}
           {tab === "diary"     && <Diary     {...shared} />}
           {tab === "ai"        && <AIPanel   {...shared} />}
-          {tab === "settings"  && (
-            <Settings
-              apiKey={apiKey} setApiKey={setApiKey}
-              notify={notify} AREAS={AREAS}
-              sbReady={sbReady} syncing={syncing}
-              onSupabaseSaved={onSupabaseSaved}
-            />
-          )}
         </div>
 
         {/* Mobile bottom nav */}

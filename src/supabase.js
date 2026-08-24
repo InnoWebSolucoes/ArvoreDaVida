@@ -17,6 +17,4 @@ export const getSupabase = () => {
   return _client;
 };
 
-export const resetClient = () => { _client = null; };
-
 export const isConfigured = () => !!(getUrl() && getKey());
